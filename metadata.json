@@ -1,0 +1,8 @@
+{
+  "name": "Евро Ворота — Официальный дилер DoorHan в Казахстане",
+  "description": "Автоматические секционные, откатные ворота, рольставни, автоматика и шлагбаумы DoorHan. Монтаж от 1 дня, гарантия 24 месяца.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
