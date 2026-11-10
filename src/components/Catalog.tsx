@@ -12,12 +12,13 @@ export const Catalog: React.FC<CatalogProps> = ({ onOpenLeadModal, onSelectForCa
 
   const categories = [
     { id: 'all', label: 'Вся продукция' },
-    { id: 'sectional', label: 'Секционные ворота' },
-    { id: 'sliding', label: 'Откатные ворота' },
     { id: 'roller', label: 'Рольставни' },
+    { id: 'automation', label: 'Автоматизация' },
+    { id: 'fire-doors', label: 'Противопожарные двери' },
+    { id: 'sectional', label: 'Секционные ворота' },
     { id: 'barrier', label: 'Шлагбаумы' },
-    { id: 'automation', label: 'Автоматика' },
-    { id: 'fire-doors', label: 'Противопожарные' },
+    { id: 'sliding', label: 'Откатные ворота' },
+    { id: 'industrial', label: 'Промышленные ворота' },
   ];
 
   const filteredProducts = activeCategory === 'all'

@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
+import { QuizCalculator } from './components/QuizCalculator';
 import { TrustStats } from './components/TrustStats';
 import { Catalog } from './components/Catalog';
 import { Calculator } from './components/Calculator';
@@ -74,6 +75,9 @@ export default function App() {
           onOpenLeadModal={handleOpenLeadModal}
           onScrollToSection={handleScrollToSection}
         />
+
+        {/* 2.1 Quiz Calculator (Exact position: right after Hero and before TrustStats) */}
+        <QuizCalculator onSuccessLead={handleSuccessLead} />
 
         {/* 3. Trust / Advantages */}
         <TrustStats onOpenLeadModal={handleOpenLeadModal} />

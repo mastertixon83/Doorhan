@@ -15,13 +15,13 @@ export const TrustStats: React.FC<TrustStatsProps> = ({ onOpenLeadModal }) => {
         {/* Header */}
         <div className="max-w-3xl mb-12 sm:mb-16">
           <div className="text-xs font-bold uppercase tracking-wider text-amber-600 mb-2">
-            Почему клиенты выбирают «Евро Ворота»
+            Факты и преимущества
           </div>
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight text-balance">
-            Надежные стандарты официального дилера DoorHan
+            Почему секционные ворота заказывают в "Евро Ворота"
           </h2>
           <p className="mt-3 text-base text-slate-600">
-            Мы не просто привозим коробку с воротами — мы берем на себя полный цикл: от лазерного замера и расчета нагрузок до профессионального монтажа и сервисного обслуживания.
+            Мы берем на себя полный цикл: от бесплатного замера и согласования прозрачной сметы до профессионального монтажа с гарантией 24 месяца.
           </p>
         </div>
 

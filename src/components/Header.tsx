@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { COMPANY_INFO } from '../data/landingData';
-import { Phone, MessageCircle, MapPin, Clock, Menu, X, ShieldCheck } from 'lucide-react';
+import { Phone, MessageCircle, MapPin, Clock, Menu, X, ShieldCheck, Mail } from 'lucide-react';
 
 interface HeaderProps {
   onOpenLeadModal: (title?: string) => void;
@@ -12,7 +12,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenLeadModal }) => {
   const navLinks = [
     { label: 'Каталог', href: '#catalog' },
     { label: 'Преимущества', href: '#advantages' },
-    { label: 'Калькулятор', href: '#calculator' },
+    { label: 'Калькулятор', href: '#quiz-calculator' },
     { label: 'Особенности', href: '#features' },
     { label: 'Как мы работаем', href: '#workflow' },
     { label: 'Отзывы', href: '#reviews' },
@@ -35,18 +35,13 @@ export const Header: React.FC<HeaderProps> = ({ onOpenLeadModal }) => {
           <div className="flex items-center gap-4 flex-wrap justify-center md:justify-start">
             <span className="flex items-center gap-1.5 text-slate-200 font-medium">
               <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
-              {COMPANY_INFO.status}
+              {COMPANY_INFO.slogan}
             </span>
             <span className="hidden lg:inline text-slate-500">|</span>
-            <span className="hidden lg:flex items-center gap-1 text-slate-400">
-              <MapPin className="w-3.5 h-3.5 text-slate-400" />
-              Доставка и монтаж по всему Казахстану
-            </span>
-            <span className="hidden xl:inline text-slate-500">|</span>
-            <span className="hidden xl:flex items-center gap-1 text-slate-400">
-              <Clock className="w-3.5 h-3.5 text-slate-400" />
-              {COMPANY_INFO.workingHours}
-            </span>
+            <a href={`mailto:${COMPANY_INFO.email}`} className="hidden lg:flex items-center gap-1 text-slate-300 hover:text-amber-400 transition-colors">
+              <Mail className="w-3.5 h-3.5 text-amber-400" />
+              {COMPANY_INFO.email}
+            </a>
           </div>
 
           <div className="flex items-center gap-5">

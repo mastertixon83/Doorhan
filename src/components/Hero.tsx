@@ -18,12 +18,12 @@ interface HeroProps {
 
 export const Hero: React.FC<HeroProps> = ({ onOpenLeadModal, onScrollToSection }) => {
   const quickCategories = [
-    { id: 'sectional', label: 'Секционные ворота', icon: Layers, tag: 'Гаражные & Промышленные' },
-    { id: 'sliding', label: 'Откатные ворота', icon: CheckCircle2, tag: 'Въездные консольные' },
     { id: 'roller', label: 'Рольставни', icon: ShieldCheck, tag: 'Окна, витрины, сантехника' },
-    { id: 'barrier', label: 'Шлагбаумы', icon: Calendar, tag: 'КПП & Парковки' },
     { id: 'automation', label: 'Автоматизация', icon: Wrench, tag: 'Приводы & Пульты' },
     { id: 'fire-doors', label: 'Противопожарные двери', icon: Percent, tag: 'Сертификат EI-60' },
+    { id: 'sectional', label: 'Секционные ворота', icon: Layers, tag: 'Гаражные & Промышленные' },
+    { id: 'barrier', label: 'Шлагбаумы', icon: Calendar, tag: 'КПП & Парковки' },
+    { id: 'sliding', label: 'Откатные ворота', icon: CheckCircle2, tag: 'Въездные консольные' },
   ];
 
   return (
@@ -52,12 +52,12 @@ export const Hero: React.FC<HeroProps> = ({ onOpenLeadModal, onScrollToSection }
 
             {/* Main Headline */}
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[46px] font-extrabold text-white tracking-tight leading-[1.15] text-balance">
-              Автоматические ворота, рольставни и шлагбаумы <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-200">DoorHan</span> с гарантией 24 месяца
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-200">DoorHan</span> — Официальный дилер фирмы Дорхан в Казахстане
             </h1>
 
             {/* Subtitle / Value Proposition */}
             <p className="text-base sm:text-lg text-slate-300 max-w-2xl leading-relaxed">
-              Прямые цены от завода-производителя без скрытых наценок. Бесплатный выезд инженера-замерщика по городу и области, монтаж под ключ с оригинальной автоматикой от 1 дня. Опыт работы с 2011 года.
+              Доставка, монтаж, цены от производителя! Мы работаем по всему Казахстану. Устанавливаем откатные и секционные ворота с 2011 года. Всего установлено 142 комплекта ворот. Гарантия на монтаж — 24 месяца!
             </p>
 
             {/* Key Trust Checkmarks */}
@@ -83,7 +83,14 @@ export const Hero: React.FC<HeroProps> = ({ onOpenLeadModal, onScrollToSection }
             {/* Primary Action Row */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-2">
               <button
-                onClick={() => onScrollToSection('calculator')}
+                onClick={() => {
+                  const el = document.getElementById('quiz-calculator');
+                  if (el) {
+                    el.scrollIntoView({ behavior: 'smooth' });
+                  } else {
+                    onScrollToSection('quiz-calculator');
+                  }
+                }}
                 className="inline-flex items-center justify-center gap-2.5 px-7 py-4 text-sm sm:text-base font-bold text-slate-950 bg-amber-400 hover:bg-amber-300 active:bg-amber-500 rounded-xl transition-all shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30 cursor-pointer group whitespace-nowrap"
               >
                 <span>Узнать стоимость ворот</span>

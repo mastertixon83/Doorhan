@@ -91,12 +91,13 @@ export const Footer: React.FC<FooterProps> = ({ onOpenLeadModal }) => {
               Продукция DoorHan
             </div>
             <ul className="space-y-2 text-xs text-slate-400">
-              <li>Секционные гаражные ворота</li>
-              <li>Откатные въездные ворота</li>
-              <li>Защитные рольставни и роллеты</li>
-              <li>Автоматические шлагбаумы Barrier</li>
-              <li>Электроприводы и автоматика</li>
-              <li>Противопожарные стальные двери EI-60</li>
+              <li>Рольставни</li>
+              <li>Автоматизация</li>
+              <li>Противопожарные двери</li>
+              <li>Секционные ворота</li>
+              <li>Шлагбаумы</li>
+              <li>Откатные ворота</li>
+              <li>Промышленные ворота</li>
             </ul>
           </div>
 
@@ -162,7 +163,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenLeadModal }) => {
         {/* Bottom Bar */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <div>
-            © 2011–{new Date().getFullYear()} ТОО «Евро Ворота». Официальный дилер компании DoorHan в Республике Казахстан. Все права защищены.
+            Все права защищены © 2026 Евро Ворота
           </div>
 
           <button
