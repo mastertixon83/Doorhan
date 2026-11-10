@@ -1,6 +1,18 @@
 import React, { useState, useId } from 'react';
 import { COMPANY_INFO } from '../data/landingData';
-import { Calculator as CalcIcon, CheckCircle2, ShieldAlert, Sparkles, Send } from 'lucide-react';
+import { formatKazakhstanPhone, isValidKazakhstanPhone } from '../utils/phoneFormatter';
+import {
+  Calculator as CalcIcon,
+  CheckCircle2,
+  ShieldAlert,
+  Sparkles,
+  Send,
+  MessageCircle,
+  ShieldCheck,
+  Clock,
+  Layers,
+  Ruler,
+} from 'lucide-react';
 
 interface CalculatorProps {
   preselectedCategory?: string;
@@ -38,13 +50,28 @@ export const Calculator: React.FC<CalculatorProps> = ({ preselectedCategory, onS
     { id: 'fire-doors', label: 'Противопожарные двери', baseM2: 0, minPrice: 110000 },
   ];
 
+  // Quick dimension presets
+  const presets = [
+    { label: 'Гараж стандарт', w: 3000, h: 2500, type: 'sectional' },
+    { label: 'Для внедорожника', w: 3500, h: 2800, type: 'sectional' },
+    { label: 'Въездные откатные', w: 4000, h: 2000, type: 'sliding' },
+    { label: 'Двойной въезд', w: 5000, h: 2500, type: 'sectional' },
+  ];
+
+  const applyPreset = (presetW: number, presetH: number, presetType?: string) => {
+    setWidth(presetW);
+    setHeight(presetH);
+    if (presetType) setGateType(presetType);
+  };
+
   // Dynamic Price Calculation
   const currentType = types.find((t) => t.id === gateType) || types[0];
   const areaM2 = (width * height) / 1000000;
-  
-  let baseConstructionCost = currentType.baseM2 > 0 
-    ? Math.round(areaM2 * currentType.baseM2 + currentType.minPrice * 0.4)
-    : currentType.minPrice;
+
+  let baseConstructionCost =
+    currentType.baseM2 > 0
+      ? Math.round(areaM2 * currentType.baseM2 + currentType.minPrice * 0.4)
+      : currentType.minPrice;
 
   if (baseConstructionCost < currentType.minPrice) {
     baseConstructionCost = currentType.minPrice;
@@ -55,18 +82,19 @@ export const Calculator: React.FC<CalculatorProps> = ({ preselectedCategory, onS
   const installCost = withInstallation ? Math.round(baseConstructionCost * 0.12 + 25000) : 0;
 
   const estimatedTotal = baseConstructionCost + automationCost + wicketCost + installCost;
-  const discountAmount = Math.round(estimatedTotal * 0.10); // 10% online calculation discount
+  const discountAmount = Math.round(estimatedTotal * 0.1); // 10% online calculation discount
   const finalPrice = estimatedTotal - discountAmount;
 
   const handlePhoneChange = (val: string) => {
-    setPhone(val);
+    const formatted = formatKazakhstanPhone(val);
+    setPhone(formatted);
     if (phoneError) setPhoneError('');
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!phone || phone.trim().length < 9) {
-      setPhoneError('Пожалуйста, укажите корректный номер телефона');
+    if (!phone || !isValidKazakhstanPhone(phone)) {
+      setPhoneError('Пожалуйста, укажите полный номер телефона: +7 (XXX) XXX-XX-XX');
       return;
     }
 
@@ -76,7 +104,12 @@ export const Calculator: React.FC<CalculatorProps> = ({ preselectedCategory, onS
       setIsSubmitted(true);
       const details = `${currentType.label}, ${width}x${height} мм, Автоматика: ${withAutomation ? 'Да' : 'Нет'}, Город: ${selectedCity}, Расчетная стоимость: ${finalPrice.toLocaleString('ru-RU')} ₸`;
       onSuccessLead(details);
-    }, 600);
+    }, 500);
+  };
+
+  const buildWhatsAppConsultUrl = () => {
+    const text = `Здравствуйте! Хочу уточнить стоимость ворот DoorHan:\n• Тип: ${currentType.label}\n• Размеры: ${width} × ${height} мм (${(width / 1000).toFixed(2)} × ${(height / 1000).toFixed(2)} м)\n• Автоматика: ${withAutomation ? 'Да' : 'Нет'}\n• Город: ${selectedCity}\n• Ориентир цены на сайте: ${finalPrice.toLocaleString('ru-RU')} ₸.\nПрикрепляю фото своего проема для точной сметы:`;
+    return `https://wa.me/${COMPANY_INFO.whatsapp}?text=${encodeURIComponent(text)}`;
   };
 
   return (
@@ -124,9 +157,34 @@ export const Calculator: React.FC<CalculatorProps> = ({ preselectedCategory, onS
                 </div>
               </div>
 
+              {/* Quick Size Presets */}
+              {currentType.baseM2 > 0 && (
+                <div>
+                  <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    Популярные типовые размеры (1 клик):
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {presets.map((preset, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => applyPreset(preset.w, preset.h, preset.type)}
+                        className={`text-xs px-2.5 py-1.5 rounded-lg border font-medium transition-colors cursor-pointer ${
+                          width === preset.w && height === preset.h
+                            ? 'bg-amber-100 border-amber-300 text-amber-900 font-bold'
+                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100'
+                        }`}
+                      >
+                        {preset.label} ({preset.w / 1000}×{preset.h / 1000} м)
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* 2. Dimensions */}
               {currentType.baseM2 > 0 && (
-                <div className="space-y-4 pt-2">
+                <div className="space-y-4 pt-1">
                   <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-600">
                     <span>2. Размеры проема (в миллиметрах):</span>
                     <span className="text-amber-600 font-extrabold normal-case">
@@ -137,8 +195,12 @@ export const Calculator: React.FC<CalculatorProps> = ({ preselectedCategory, onS
                   {/* Width */}
                   <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-2">
                     <div className="flex justify-between items-center text-xs">
-                      <label htmlFor={widthInputId} className="font-semibold text-slate-700">Ширина проема:</label>
-                      <span className="font-bold text-slate-900 text-sm tabular-nums">{width} мм ({ (width/1000).toFixed(2) } м)</span>
+                      <label htmlFor={widthInputId} className="font-semibold text-slate-700">
+                        Ширина проема:
+                      </label>
+                      <span className="font-bold text-slate-900 text-sm tabular-nums">
+                        {width} мм ({(width / 1000).toFixed(2)} м)
+                      </span>
                     </div>
                     <input
                       id={widthInputId}
@@ -160,8 +222,12 @@ export const Calculator: React.FC<CalculatorProps> = ({ preselectedCategory, onS
                   {/* Height */}
                   <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-2">
                     <div className="flex justify-between items-center text-xs">
-                      <label htmlFor={heightInputId} className="font-semibold text-slate-700">Высота проема:</label>
-                      <span className="font-bold text-slate-900 text-sm tabular-nums">{height} мм ({ (height/1000).toFixed(2) } м)</span>
+                      <label htmlFor={heightInputId} className="font-semibold text-slate-700">
+                        Высота проема:
+                      </label>
+                      <span className="font-bold text-slate-900 text-sm tabular-nums">
+                        {height} мм ({(height / 1000).toFixed(2)} м)
+                      </span>
                     </div>
                     <input
                       id={heightInputId}
@@ -183,7 +249,7 @@ export const Calculator: React.FC<CalculatorProps> = ({ preselectedCategory, onS
               )}
 
               {/* 3. Options & Add-ons */}
-              <div className="space-y-2 pt-2">
+              <div className="space-y-2 pt-1">
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
                   3. Комплектация и опции:
                 </label>
@@ -194,9 +260,11 @@ export const Calculator: React.FC<CalculatorProps> = ({ preselectedCategory, onS
                         type="checkbox"
                         checked={withAutomation}
                         onChange={(e) => setWithAutomation(e.target.checked)}
-                        className="w-4 h-4 rounded text-amber-500 accent-amber-500"
+                        className="w-4 h-4 rounded text-amber-500 accent-amber-500 cursor-pointer"
                       />
-                      <span className="font-semibold text-slate-800">Электропривод DoorHan + 2 пульта</span>
+                      <span className="font-semibold text-slate-800">
+                        Электропривод DoorHan + 2 дистанционных пульта
+                      </span>
                     </div>
                     <span className="font-bold text-slate-900 tabular-nums">+55 000 ₸</span>
                   </label>
@@ -208,9 +276,11 @@ export const Calculator: React.FC<CalculatorProps> = ({ preselectedCategory, onS
                           type="checkbox"
                           checked={withWicket}
                           onChange={(e) => setWithWicket(e.target.checked)}
-                          className="w-4 h-4 rounded text-amber-500 accent-amber-500"
+                          className="w-4 h-4 rounded text-amber-500 accent-amber-500 cursor-pointer"
                         />
-                        <span className="font-semibold text-slate-800">Встроенная калитка с замком</span>
+                        <span className="font-semibold text-slate-800">
+                          Встроенная калитка с замком и доводчиком
+                        </span>
                       </div>
                       <span className="font-bold text-slate-900 tabular-nums">+68 000 ₸</span>
                     </label>
@@ -222,9 +292,11 @@ export const Calculator: React.FC<CalculatorProps> = ({ preselectedCategory, onS
                         type="checkbox"
                         checked={withInstallation}
                         onChange={(e) => setWithInstallation(e.target.checked)}
-                        className="w-4 h-4 rounded text-amber-500 accent-amber-500"
+                        className="w-4 h-4 rounded text-amber-500 accent-amber-500 cursor-pointer"
                       />
-                      <span className="font-semibold text-slate-800">Профессиональный монтаж от 1 дня</span>
+                      <span className="font-semibold text-slate-800">
+                        Профессиональный монтаж от 1 дня
+                      </span>
                     </div>
                     <span className="font-bold text-emerald-600 tabular-nums">Гарантия 24 мес.</span>
                   </label>
@@ -233,14 +305,17 @@ export const Calculator: React.FC<CalculatorProps> = ({ preselectedCategory, onS
 
               {/* City selector */}
               <div>
-                <label htmlFor={cityInputId} className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
+                <label
+                  htmlFor={cityInputId}
+                  className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2"
+                >
                   4. Регион доставки и замера:
                 </label>
                 <select
                   id={cityInputId}
                   value={selectedCity}
                   onChange={(e) => setSelectedCity(e.target.value)}
-                  className="w-full p-2.5 text-xs sm:text-sm font-semibold rounded-xl bg-white border border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="w-full p-2.5 text-xs sm:text-sm font-semibold rounded-xl bg-white border border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
                 >
                   {COMPANY_INFO.cities.map((city) => (
                     <option key={city} value={city}>
@@ -267,24 +342,32 @@ export const Calculator: React.FC<CalculatorProps> = ({ preselectedCategory, onS
                 <div className="py-4 space-y-2 text-xs text-slate-300">
                   <div className="flex justify-between">
                     <span>Полотно и направляющие:</span>
-                    <span className="font-bold text-white tabular-nums">{baseConstructionCost.toLocaleString('ru-RU')} ₸</span>
+                    <span className="font-bold text-white tabular-nums">
+                      {baseConstructionCost.toLocaleString('ru-RU')} ₸
+                    </span>
                   </div>
                   {withAutomation && (
                     <div className="flex justify-between">
                       <span>Автоматика DoorHan:</span>
-                      <span className="font-bold text-white tabular-nums">{automationCost.toLocaleString('ru-RU')} ₸</span>
+                      <span className="font-bold text-white tabular-nums">
+                        {automationCost.toLocaleString('ru-RU')} ₸
+                      </span>
                     </div>
                   )}
                   {withWicket && (
                     <div className="flex justify-between">
                       <span>Встроенная калитка:</span>
-                      <span className="font-bold text-white tabular-nums">{wicketCost.toLocaleString('ru-RU')} ₸</span>
+                      <span className="font-bold text-white tabular-nums">
+                        {wicketCost.toLocaleString('ru-RU')} ₸
+                      </span>
                     </div>
                   )}
                   {withInstallation && (
                     <div className="flex justify-between">
                       <span>Монтаж под ключ (от 1 дня):</span>
-                      <span className="font-bold text-white tabular-nums">{installCost.toLocaleString('ru-RU')} ₸</span>
+                      <span className="font-bold text-white tabular-nums">
+                        {installCost.toLocaleString('ru-RU')} ₸
+                      </span>
                     </div>
                   )}
                   <div className="flex justify-between text-slate-400">
@@ -293,7 +376,9 @@ export const Calculator: React.FC<CalculatorProps> = ({ preselectedCategory, onS
                   </div>
                   <div className="flex justify-between text-amber-400">
                     <span>Онлайн-скидка (10%):</span>
-                    <span className="font-bold tabular-nums">- {discountAmount.toLocaleString('ru-RU')} ₸</span>
+                    <span className="font-bold tabular-nums">
+                      - {discountAmount.toLocaleString('ru-RU')} ₸
+                    </span>
                   </div>
                 </div>
 
@@ -303,8 +388,9 @@ export const Calculator: React.FC<CalculatorProps> = ({ preselectedCategory, onS
                   <div className="text-3xl sm:text-4xl font-black text-amber-400 tabular-nums">
                     {finalPrice.toLocaleString('ru-RU')} ₸
                   </div>
-                  <div className="text-[11px] text-slate-400 mt-1">
-                    Точная смета фиксируется инженером на месте и не меняется.
+                  <div className="text-[11px] text-slate-400 mt-1 flex items-center gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Точная смета фиксируется инженером на месте и не меняется.</span>
                   </div>
                 </div>
               </div>
@@ -312,12 +398,22 @@ export const Calculator: React.FC<CalculatorProps> = ({ preselectedCategory, onS
               {/* Form Capture */}
               <div className="mt-8 pt-6 border-t border-slate-800">
                 {isSubmitted ? (
-                  <div className="p-4 rounded-2xl bg-emerald-950/80 border border-emerald-700 text-center space-y-2">
+                  <div className="p-4 rounded-2xl bg-emerald-950/80 border border-emerald-700 text-center space-y-3">
                     <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto" />
                     <div className="font-bold text-white text-sm">Расчет зафиксирован!</div>
                     <p className="text-xs text-slate-300">
-                      Специалист свяжется с вами в течение 10 минут для согласования удобного времени замера.
+                      Специалист «Евро Ворота» свяжется с вами в течение 10 минут по номеру{' '}
+                      <span className="text-white font-bold">{phone}</span> для согласования выезда.
                     </p>
+                    <a
+                      href={buildWhatsAppConsultUrl()}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-xs text-emerald-400 font-bold hover:underline pt-1"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      <span>Открыть чат в WhatsApp</span>
+                    </a>
                   </div>
                 ) : (
                   <form onSubmit={handleSubmit} className="space-y-3">
@@ -333,20 +429,31 @@ export const Calculator: React.FC<CalculatorProps> = ({ preselectedCategory, onS
                         placeholder="Ваше имя"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        className="w-full px-3.5 py-3 rounded-xl bg-slate-800 border border-slate-700 text-base sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
                       />
                     </div>
 
                     <div>
-                      <input
-                        id={phoneInputId}
-                        type="tel"
-                        placeholder="+7 (___) ___-__-__"
-                        value={phone}
-                        onChange={(e) => handlePhoneChange(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                        required
-                      />
+                      <div className="relative">
+                        <input
+                          id={phoneInputId}
+                          type="tel"
+                          placeholder="+7 (___) ___-__-__"
+                          value={phone}
+                          onChange={(e) => handlePhoneChange(e.target.value)}
+                          className={`w-full px-3.5 py-3 rounded-xl bg-slate-800 border text-base sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 ${
+                            phoneError
+                              ? 'border-red-500 focus:ring-red-500'
+                              : 'border-slate-700 focus:ring-amber-500'
+                          }`}
+                          required
+                        />
+                        {isValidKazakhstanPhone(phone) && (
+                          <div className="absolute right-3 top-3 text-emerald-400">
+                            <CheckCircle2 className="w-4 h-4" />
+                          </div>
+                        )}
+                      </div>
                       {phoneError && (
                         <div className="text-[11px] text-red-400 mt-1 flex items-center gap-1">
                           <ShieldAlert className="w-3 h-3" />
@@ -358,20 +465,31 @@ export const Calculator: React.FC<CalculatorProps> = ({ preselectedCategory, onS
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="w-full py-3 px-4 text-xs sm:text-sm font-bold text-slate-950 bg-amber-400 hover:bg-amber-300 active:bg-amber-500 rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-2 shadow-md shadow-amber-400/20"
+                      className="w-full py-4 px-4 text-sm font-bold text-slate-950 bg-amber-400 hover:bg-amber-300 active:bg-amber-500 rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-2 shadow-md shadow-amber-400/20 min-h-[48px]"
                     >
                       {isSubmitting ? (
                         <span>Отправляем расчет...</span>
                       ) : (
                         <>
                           <Send className="w-4 h-4" />
-                          <span>Получить расчет и замер бесплатно</span>
+                          <span>Получить точный расчет и замер 0 ₸</span>
                         </>
                       )}
                     </button>
 
-                    <div className="text-[10px] text-slate-500 text-center">
-                      Нажимая кнопку, вы соглашаетесь на обработку персональных данных. Конфиденциальность гарантируется.
+                    <a
+                      href={buildWhatsAppConsultUrl()}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-3 px-3 text-xs sm:text-sm font-semibold text-emerald-400 hover:text-emerald-300 bg-emerald-950/40 hover:bg-emerald-950/60 border border-emerald-800/60 rounded-xl transition-colors flex items-center justify-center gap-1.5 min-h-[44px]"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5 fill-current" />
+                      <span>Или отправить размеры в WhatsApp инженеру</span>
+                    </a>
+
+                    <div className="text-[10px] text-slate-400 text-center flex items-center justify-center gap-2">
+                      <Clock className="w-3 h-3 text-amber-400" />
+                      <span>Ответ за 10 минут. Никаких назойливых звонков.</span>
                     </div>
                   </form>
                 )}

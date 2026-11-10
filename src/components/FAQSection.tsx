@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
-import { FAQS } from '../data/landingData';
-import { ChevronDown, HelpCircle } from 'lucide-react';
+import { FAQS, COMPANY_INFO } from '../data/landingData';
+import { ChevronDown, HelpCircle, MessageCircle, Phone, ArrowRight, ShieldCheck } from 'lucide-react';
 
-export const FAQSection: React.FC = () => {
+interface FAQSectionProps {
+  onOpenLeadModal?: (title?: string) => void;
+}
+
+export const FAQSection: React.FC<FAQSectionProps> = ({ onOpenLeadModal }) => {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   const toggleFaq = (index: number) => {
@@ -53,6 +57,42 @@ export const FAQSection: React.FC = () => {
               </div>
             );
           })}
+        </div>
+
+        {/* Post-FAQ Objection-Handling Conversion Card */}
+        <div className="mt-12 p-6 sm:p-8 rounded-3xl bg-slate-50 border border-slate-200 text-slate-900 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
+          <div className="space-y-1 text-center md:text-left">
+            <div className="text-xs font-bold text-amber-600 uppercase tracking-wider">
+              Остались сомнения или нестандартный проем?
+            </div>
+            <h3 className="text-lg sm:text-xl font-extrabold text-slate-900">
+              Главный инженер бесплатно ответит на ваши вопросы
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-600">
+              Подскажем, какие ворота лучше подойдут под ваш климат и фундамент.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0 w-full sm:w-auto">
+            <a
+              href={`https://wa.me/${COMPANY_INFO.whatsapp}?text=${encodeURIComponent('Здравствуйте! У меня есть технический вопрос по установке ворот DoorHan.')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 text-xs sm:text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl transition-colors shadow-xs"
+            >
+              <MessageCircle className="w-4 h-4 fill-current" />
+              <span>Спросить в WhatsApp</span>
+            </a>
+
+            {onOpenLeadModal && (
+              <button
+                onClick={() => onOpenLeadModal('Техническая консультация инженера')}
+                className="w-full sm:w-auto px-5 py-3 text-xs sm:text-sm font-bold text-slate-900 bg-amber-400 hover:bg-amber-300 rounded-xl transition-colors cursor-pointer"
+              >
+                <span>Заказать звонок</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </section>

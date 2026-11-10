@@ -1,6 +1,18 @@
 import React, { useState, useId } from 'react';
 import { COMPANY_INFO } from '../data/landingData';
-import { ShieldCheck, Gift, CheckCircle2, Phone, Calendar, ArrowRight, ShieldAlert } from 'lucide-react';
+import { formatKazakhstanPhone, isValidKazakhstanPhone } from '../utils/phoneFormatter';
+import {
+  ShieldCheck,
+  Gift,
+  CheckCircle2,
+  Phone,
+  Calendar,
+  ArrowRight,
+  ShieldAlert,
+  MessageCircle,
+  Clock,
+  Sparkles,
+} from 'lucide-react';
 
 interface LeadCaptureSectionProps {
   onSuccessLead: (details: string) => void;
@@ -14,16 +26,22 @@ export const LeadCaptureSection: React.FC<LeadCaptureSectionProps> = ({ onSucces
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [gateType, setGateType] = useState('Секционные гаражные ворота');
+  const [gateType, setGateType] = useState('Секционные ворота');
   const [city, setCity] = useState('Уральск');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
+  const handlePhoneChange = (val: string) => {
+    const formatted = formatKazakhstanPhone(val);
+    setPhone(formatted);
+    if (errorMessage) setErrorMessage('');
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!phone || phone.trim().length < 9) {
-      setErrorMessage('Пожалуйста, введите ваш контактный номер телефона');
+    if (!phone || !isValidKazakhstanPhone(phone)) {
+      setErrorMessage('Пожалуйста, введите полный номер телефона: +7 (XXX) XXX-XX-XX');
       return;
     }
 
@@ -31,8 +49,15 @@ export const LeadCaptureSection: React.FC<LeadCaptureSectionProps> = ({ onSucces
     setTimeout(() => {
       setIsSubmitting(false);
       setIsSubmitted(true);
-      onSuccessLead(`Лид-магнит (Бесплатный замер): ${name || 'Клиент'}, тел: ${phone}, тип: ${gateType}, город: ${city}`);
-    }, 600);
+      onSuccessLead(
+        `Лид-магнит (Бесплатный замер): ${name || 'Клиент'}, тел: ${phone}, тип: ${gateType}, город: ${city}`
+      );
+    }, 500);
+  };
+
+  const getDirectWhatsAppUrl = () => {
+    const text = `Здравствуйте! Хочу записаться на бесплатный замер и зафиксировать скидку 10% на монтаж ворот DoorHan:\n• Тип: ${gateType}\n• Город: ${city}\n• Имя: ${name || 'Клиент'}`;
+    return `https://wa.me/${COMPANY_INFO.whatsapp}?text=${encodeURIComponent(text)}`;
   };
 
   return (
@@ -94,26 +119,39 @@ export const LeadCaptureSection: React.FC<LeadCaptureSectionProps> = ({ onSucces
             {/* Right Form Card */}
             <div className="lg:col-span-5 bg-white text-slate-900 p-6 sm:p-8 rounded-2xl shadow-xl">
               {isSubmitted ? (
-                <div className="py-8 text-center space-y-3">
+                <div className="py-8 text-center space-y-4">
                   <div className="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
                     <CheckCircle2 className="w-8 h-8" />
                   </div>
-                  <h3 className="text-xl font-bold text-slate-900">
-                    Заявка принята!
-                  </h3>
+                  <h3 className="text-xl font-bold text-slate-900">Заявка принята!</h3>
                   <p className="text-xs sm:text-sm text-slate-600 max-w-xs mx-auto">
-                    Спасибо! Наш инженер свяжется с вами в течение 10–15 минут для согласования точного времени замера.
+                    Спасибо! Наш инженер свяжется с вами по номеру <strong className="text-slate-900">{phone}</strong> в течение 10–15 минут для согласования точного времени замера.
                   </p>
-                  <button
-                    onClick={() => setIsSubmitted(false)}
-                    className="text-xs text-amber-600 font-bold hover:underline pt-2 inline-block cursor-pointer"
-                  >
-                    Отправить еще одну заявку
-                  </button>
+                  <div className="pt-2 flex flex-col gap-2">
+                    <a
+                      href={getDirectWhatsAppUrl()}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-4 py-2.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl transition-colors inline-flex items-center justify-center gap-1.5"
+                    >
+                      <MessageCircle className="w-4 h-4 fill-current" />
+                      <span>Открыть чат в WhatsApp</span>
+                    </a>
+                    <button
+                      onClick={() => setIsSubmitted(false)}
+                      className="text-xs text-slate-500 hover:text-slate-800 font-semibold pt-1 cursor-pointer"
+                    >
+                      Отправить еще одну заявку
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-1">
+                    <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-600">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      Бесплатный выезд день в день
+                    </div>
                     <h3 className="text-lg font-bold text-slate-900">
                       Записаться на бесплатный замер
                     </h3>
@@ -132,24 +170,32 @@ export const LeadCaptureSection: React.FC<LeadCaptureSectionProps> = ({ onSucces
                       placeholder="Например, Ерлан"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                      className="w-full px-3.5 py-3 rounded-xl border border-slate-300 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                     />
                   </div>
 
                   <div>
-                    <label htmlFor={phoneId} className="block text-xs font-semibold text-slate-700 mb-1">
-                      Номер телефона <span className="text-red-500">*</span>
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label htmlFor={phoneId} className="block text-xs font-semibold text-slate-700">
+                        Номер телефона / WhatsApp <span className="text-red-500">*</span>
+                      </label>
+                      {isValidKazakhstanPhone(phone) && (
+                        <span className="text-[11px] font-bold text-emerald-600 flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" /> Корректно
+                        </span>
+                      )}
+                    </div>
                     <input
                       id={phoneId}
                       type="tel"
                       placeholder="+7 (___) ___-__-__"
                       value={phone}
-                      onChange={(e) => {
-                        setPhone(e.target.value);
-                        if (errorMessage) setErrorMessage('');
-                      }}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                      onChange={(e) => handlePhoneChange(e.target.value)}
+                      className={`w-full px-3.5 py-3 rounded-xl border text-base sm:text-sm focus:outline-none focus:ring-2 ${
+                        errorMessage
+                          ? 'border-red-400 focus:ring-red-400 bg-red-50/20'
+                          : 'border-slate-300 focus:ring-amber-500'
+                      }`}
                       required
                     />
                     {errorMessage && (
@@ -169,14 +215,15 @@ export const LeadCaptureSection: React.FC<LeadCaptureSectionProps> = ({ onSucces
                         id={typeId}
                         value={gateType}
                         onChange={(e) => setGateType(e.target.value)}
-                        className="w-full p-2.5 rounded-xl border border-slate-300 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        className="w-full p-3 rounded-xl border border-slate-300 text-base sm:text-xs font-medium focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer bg-white"
                       >
-                        <option value="Секционные гаражные ворота">Секционные гаражные</option>
-                        <option value="Откатные въездные ворота">Откатные въездные</option>
-                        <option value="Защитные рольставни">Рольставни</option>
-                        <option value="Автоматический шлагбаум">Шлагбаум Barrier</option>
-                        <option value="Комплект автоматики">Комплект автоматики</option>
+                        <option value="Секционные ворота">Секционные ворота</option>
+                        <option value="Откатные ворота">Откатные ворота</option>
+                        <option value="Рольставни">Рольставни</option>
+                        <option value="Шлагбаумы">Шлагбаумы</option>
+                        <option value="Автоматизация">Автоматизация</option>
                         <option value="Противопожарные двери">Противопожарные двери</option>
+                        <option value="Промышленные ворота">Промышленные ворота</option>
                       </select>
                     </div>
 
@@ -188,32 +235,47 @@ export const LeadCaptureSection: React.FC<LeadCaptureSectionProps> = ({ onSucces
                         id={cityId}
                         value={city}
                         onChange={(e) => setCity(e.target.value)}
-                        className="w-full p-2.5 rounded-xl border border-slate-300 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        className="w-full p-3 rounded-xl border border-slate-300 text-base sm:text-xs font-medium focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer bg-white"
                       >
                         {COMPANY_INFO.cities.map((c) => (
-                          <option key={c} value={c}>{c}</option>
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
                         ))}
                       </select>
                     </div>
                   </div>
 
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="w-full py-3.5 px-4 text-xs sm:text-sm font-bold text-slate-950 bg-amber-400 hover:bg-amber-300 active:bg-amber-500 rounded-xl transition-all shadow-md shadow-amber-400/20 cursor-pointer flex items-center justify-center gap-2"
-                  >
-                    {isSubmitting ? (
-                      <span>Отправка данных...</span>
-                    ) : (
-                      <>
-                        <span>Вызвать замерщика бесплатно</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </>
-                    )}
-                  </button>
+                  <div className="space-y-2 pt-1">
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-full py-4 px-4 text-xs sm:text-sm font-extrabold text-slate-950 bg-amber-400 hover:bg-amber-300 active:bg-amber-500 rounded-xl transition-all shadow-md shadow-amber-400/20 cursor-pointer flex items-center justify-center gap-2"
+                    >
+                      {isSubmitting ? (
+                        <span>Отправка данных...</span>
+                      ) : (
+                        <>
+                          <span>Рассчитать стоимость и вызвать замерщика 0 ₸</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </>
+                      )}
+                    </button>
 
-                  <div className="text-[11px] text-slate-500 text-center">
-                    Выезд не обязывает к покупке. Вы получите расчет и консультацию специалиста.
+                    <a
+                      href={getDirectWhatsAppUrl()}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-2.5 px-3 text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5 fill-current text-emerald-600" />
+                      <span>Или написать заявку сразу в WhatsApp</span>
+                    </a>
+                  </div>
+
+                  <div className="text-[11px] text-slate-500 text-center flex items-center justify-center gap-2">
+                    <Clock className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Выезд не обязывает к покупке. Звоним только для замера.</span>
                   </div>
                 </form>
               )}

@@ -107,7 +107,7 @@ export default function App() {
         <LeadCaptureSection onSuccessLead={handleSuccessLead} />
 
         {/* 10. FAQs */}
-        <FAQSection />
+        <FAQSection onOpenLeadModal={handleOpenLeadModal} />
       </main>
 
       {/* 11. Footer */}

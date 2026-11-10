@@ -1,5 +1,6 @@
 import React, { useState, useId } from 'react';
 import { COMPANY_INFO } from '../data/landingData';
+import { formatKazakhstanPhone, isValidKazakhstanPhone } from '../utils/phoneFormatter';
 import {
   Layers,
   ArrowRight,
@@ -16,6 +17,8 @@ import {
   SlidersHorizontal,
   Warehouse,
   ShieldAlert,
+  Clock,
+  Send,
 } from 'lucide-react';
 
 interface QuizCalculatorProps {
@@ -41,6 +44,7 @@ export const QuizCalculator: React.FC<QuizCalculatorProps> = ({ onSuccessLead })
   const [phoneError, setPhoneError] = useState<string>('');
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
   const [whatsAppUrl, setWhatsAppUrl] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   // Step 1 Options
   const objectTypeOptions = [
@@ -139,6 +143,18 @@ export const QuizCalculator: React.FC<QuizCalculatorProps> = ({ onSuccessLead })
     },
   ];
 
+  // Auto-advance helper with small delay for visual feedback
+  const handleSelectOptionWithAdvance = (
+    setter: (val: string) => void,
+    val: string,
+    nextStepNumber: number
+  ) => {
+    setter(val);
+    setTimeout(() => {
+      setCurrentStep(nextStepNumber);
+    }, 240);
+  };
+
   const handleNext = () => {
     if (currentStep < 4) {
       setCurrentStep((prev) => prev + 1);
@@ -151,16 +167,13 @@ export const QuizCalculator: React.FC<QuizCalculatorProps> = ({ onSuccessLead })
     }
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!userPhone || userPhone.trim().length < 8) {
-      setPhoneError('Пожалуйста, введите ваш контактный номер телефона');
-      return;
-    }
+  const handlePhoneInputChange = (rawVal: string) => {
+    const formatted = formatKazakhstanPhone(rawVal);
+    setUserPhone(formatted);
+    if (phoneError) setPhoneError('');
+  };
 
-    setPhoneError('');
-
-    // Prepare WhatsApp message
+  const buildWhatsAppMessage = () => {
     const lines = [
       '👋 Здравствуйте! Я прошел квиз-калькулятор стоимости ворот на сайте «Евро Ворота»:',
       `• Тип объекта: ${objectType}`,
@@ -168,24 +181,38 @@ export const QuizCalculator: React.FC<QuizCalculatorProps> = ({ onSuccessLead })
       `• Управление: ${automationType}`,
       `• Выбранный подарок: 🎁 ${selectedGift}`,
       `• Контактное лицо: ${userName || 'Клиент'}`,
-      `• Телефон: ${userPhone}`,
+      `• Телефон: ${userPhone || 'Указан в чате'}`,
       'Пожалуйста, подготовьте расчет стоимости и зафиксируйте за мной подарок!',
     ];
+    return lines.join('\n');
+  };
 
-    const messageText = lines.join('\n');
+  const handleFormSubmit = (e: React.FormEvent, forceWhatsApp = false) => {
+    e.preventDefault();
+
+    if (!userPhone || !isValidKazakhstanPhone(userPhone)) {
+      setPhoneError('Пожалуйста, введите полный номер телефона: +7 (XXX) XXX-XX-XX');
+      return;
+    }
+
+    setPhoneError('');
+    setIsSubmitting(true);
+
+    const messageText = buildWhatsAppMessage();
     const waUrl = `https://wa.me/${COMPANY_INFO.whatsapp}?text=${encodeURIComponent(messageText)}`;
     setWhatsAppUrl(waUrl);
-    setIsSubmitted(true);
 
     const leadSummary = `Квиз: ${objectType}, размер: ${gateSize}, автоматика: ${automationType}, подарок: ${selectedGift}, имя: ${userName || 'Клиент'}, тел: ${userPhone}`;
-    onSuccessLead(leadSummary);
 
-    // Redirect to WhatsApp
-    try {
-      window.open(waUrl, '_blank');
-    } catch {
-      window.location.href = waUrl;
-    }
+    setTimeout(() => {
+      setIsSubmitting(false);
+      setIsSubmitted(true);
+      onSuccessLead(leadSummary);
+
+      if (forceWhatsApp) {
+        window.open(waUrl, '_blank');
+      }
+    }, 400);
   };
 
   const progressPercent = Math.round((currentStep / 4) * 100);
@@ -239,39 +266,89 @@ export const QuizCalculator: React.FC<QuizCalculatorProps> = ({ onSuccessLead })
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
+
+            {/* Quick Step Indicators */}
+            <div className="hidden sm:grid grid-cols-4 gap-2 mt-3 pt-2 text-[11px] text-slate-500">
+              <button
+                type="button"
+                onClick={() => setCurrentStep(1)}
+                className={`text-left font-semibold transition-colors cursor-pointer truncate ${currentStep === 1 ? 'text-amber-600' : 'hover:text-slate-900'}`}
+              >
+                1. Тип объекта
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrentStep(2)}
+                className={`text-left font-semibold transition-colors cursor-pointer truncate ${currentStep === 2 ? 'text-amber-600' : 'hover:text-slate-900'}`}
+              >
+                2. Размеры
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrentStep(3)}
+                className={`text-left font-semibold transition-colors cursor-pointer truncate ${currentStep === 3 ? 'text-amber-600' : 'hover:text-slate-900'}`}
+              >
+                3. Автоматика
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrentStep(4)}
+                className={`text-left font-semibold transition-colors cursor-pointer truncate ${currentStep === 4 ? 'text-amber-600' : 'hover:text-slate-900'}`}
+              >
+                4. Подарок и расчет
+              </button>
+            </div>
           </div>
 
           {/* Step Contents */}
-          <div className="p-6 sm:p-8 lg:p-10">
+          <div className="p-4 sm:p-8 lg:p-10">
             {isSubmitted ? (
               /* Success Screen */
-              <div className="py-8 text-center space-y-5 animate-fadeIn">
+              <div className="py-6 text-center space-y-6 animate-fadeIn">
                 <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-sm">
                   <CheckCircle2 className="w-10 h-10" />
                 </div>
 
-                <div className="space-y-1">
-                  <span className="text-xs font-bold uppercase tracking-wider text-emerald-600">
-                    Расчет сформирован!
+                <div className="space-y-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+                    Заявка успешно принята!
                   </span>
-                  <h3 className="text-2xl font-extrabold text-slate-900">
-                    Ваш подарок зафиксирован: {selectedGift}
+                  <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
+                    Смета формируется, подарок зафиксирован
                   </h3>
-                  <p className="text-sm text-slate-600 max-w-md mx-auto">
-                    Мы уже перенаправили вас в WhatsApp с готовыми параметрами. Если чат не открылся автоматически, нажмите кнопку ниже:
+                  <p className="text-sm text-slate-600 max-w-lg mx-auto">
+                    Спасибо, {userName || 'уважаемый клиент'}! Наш инженер свяжется с вами по номеру <strong className="text-slate-900">{userPhone}</strong> в течение 10 минут.
                   </p>
                 </div>
 
-                {/* Direct WhatsApp CTA Button */}
+                {/* Gift Certificate Voucher Card */}
+                <div className="max-w-md mx-auto p-4 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-dashed border-amber-300 text-left flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-black shrink-0 shadow-sm">
+                    <Gift className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="text-[10px] uppercase font-bold text-amber-700 tracking-wider">
+                      Ваш подарочный сертификат:
+                    </div>
+                    <div className="text-sm font-extrabold text-slate-900">
+                      {selectedGift}
+                    </div>
+                    <div className="text-[11px] text-slate-500">
+                      Учтен за номером {userPhone} и будет внесен в договор
+                    </div>
+                  </div>
+                </div>
+
+                {/* Direct WhatsApp Action Button */}
                 <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
                   <a
                     href={whatsAppUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-2 px-6 py-3.5 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 rounded-xl transition-all shadow-md shadow-emerald-600/20 cursor-pointer"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 rounded-xl transition-all shadow-md shadow-emerald-600/20 cursor-pointer"
                   >
                     <MessageCircle className="w-5 h-5 fill-current" />
-                    <span>Открыть диалог в WhatsApp</span>
+                    <span>Открыть переписку в WhatsApp прямо сейчас</span>
                   </a>
 
                   <button
@@ -279,15 +356,15 @@ export const QuizCalculator: React.FC<QuizCalculatorProps> = ({ onSuccessLead })
                       setIsSubmitted(false);
                       setCurrentStep(1);
                     }}
-                    className="px-5 py-3.5 text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                    className="w-full sm:w-auto px-5 py-3.5 text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
                   >
-                    Рассчитать заново
+                    Пройти квиз заново
                   </button>
                 </div>
 
-                <div className="text-xs text-slate-400 pt-2 flex items-center justify-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                  <span>Менеджер свяжется с вами в течение 10 минут</span>
+                <div className="text-xs text-slate-500 pt-2 flex items-center justify-center gap-2">
+                  <Clock className="w-4 h-4 text-emerald-600" />
+                  <span>Работаем ежедневно с 09:00 до 20:00. Выезд на замер 0 ₸.</span>
                 </div>
               </div>
             ) : (
@@ -295,9 +372,14 @@ export const QuizCalculator: React.FC<QuizCalculatorProps> = ({ onSuccessLead })
                 {/* STEP 1: Type */}
                 {currentStep === 1 && (
                   <div className="space-y-4 animate-fadeIn">
-                    <h3 className="text-lg sm:text-xl font-extrabold text-slate-900">
-                      1. Какой тип ворот или системы вам требуется?
-                    </h3>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg sm:text-xl font-extrabold text-slate-900">
+                        1. Какой тип ворот или системы вам требуется?
+                      </h3>
+                      <span className="text-[11px] text-slate-400 hidden sm:inline">
+                        Выберите вариант для перехода к шагу 2
+                      </span>
+                    </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                       {objectTypeOptions.map((opt) => {
@@ -306,7 +388,9 @@ export const QuizCalculator: React.FC<QuizCalculatorProps> = ({ onSuccessLead })
                         return (
                           <div
                             key={opt.id}
-                            onClick={() => setObjectType(opt.title)}
+                            onClick={() =>
+                              handleSelectOptionWithAdvance(setObjectType, opt.title, 2)
+                            }
                             className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-start gap-3.5 ${
                               isSelected
                                 ? 'border-amber-500 bg-amber-50/50 shadow-sm'
@@ -354,9 +438,14 @@ export const QuizCalculator: React.FC<QuizCalculatorProps> = ({ onSuccessLead })
                 {/* STEP 2: Sizes */}
                 {currentStep === 2 && (
                   <div className="space-y-4 animate-fadeIn">
-                    <h3 className="text-lg sm:text-xl font-extrabold text-slate-900">
-                      2. Укажите ориентировочные размеры проема:
-                    </h3>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg sm:text-xl font-extrabold text-slate-900">
+                        2. Укажите ориентировочные размеры проема:
+                      </h3>
+                      <span className="text-[11px] text-slate-400 hidden sm:inline">
+                        Выберите вариант для перехода к шагу 3
+                      </span>
+                    </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                       {sizeOptions.map((opt, idx) => {
@@ -364,7 +453,9 @@ export const QuizCalculator: React.FC<QuizCalculatorProps> = ({ onSuccessLead })
                         return (
                           <div
                             key={idx}
-                            onClick={() => setGateSize(opt.title)}
+                            onClick={() =>
+                              handleSelectOptionWithAdvance(setGateSize, opt.title, 3)
+                            }
                             className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-start justify-between gap-3 ${
                               isSelected
                                 ? 'border-amber-500 bg-amber-50/50 shadow-sm'
@@ -408,9 +499,14 @@ export const QuizCalculator: React.FC<QuizCalculatorProps> = ({ onSuccessLead })
                 {/* STEP 3: Automation */}
                 {currentStep === 3 && (
                   <div className="space-y-4 animate-fadeIn">
-                    <h3 className="text-lg sm:text-xl font-extrabold text-slate-900">
-                      3. Какое управление автоматикой вам требуется?
-                    </h3>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg sm:text-xl font-extrabold text-slate-900">
+                        3. Какое управление автоматикой вам требуется?
+                      </h3>
+                      <span className="text-[11px] text-slate-400 hidden sm:inline">
+                        Выберите вариант для перехода к шагу 4
+                      </span>
+                    </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                       {automationOptions.map((opt, idx) => {
@@ -419,7 +515,9 @@ export const QuizCalculator: React.FC<QuizCalculatorProps> = ({ onSuccessLead })
                         return (
                           <div
                             key={idx}
-                            onClick={() => setAutomationType(opt.title)}
+                            onClick={() =>
+                              handleSelectOptionWithAdvance(setAutomationType, opt.title, 4)
+                            }
                             className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-start gap-3.5 ${
                               isSelected
                                 ? 'border-amber-500 bg-amber-50/50 shadow-sm'
@@ -466,7 +564,7 @@ export const QuizCalculator: React.FC<QuizCalculatorProps> = ({ onSuccessLead })
 
                 {/* STEP 4: Final + Gift + Form */}
                 {currentStep === 4 && (
-                  <form onSubmit={handleFormSubmit} className="space-y-6 animate-fadeIn">
+                  <form onSubmit={(e) => handleFormSubmit(e, false)} className="space-y-6 animate-fadeIn">
                     <div>
                       <div className="flex items-center gap-2 mb-2">
                         <Gift className="w-5 h-5 text-amber-500" />
@@ -525,7 +623,7 @@ export const QuizCalculator: React.FC<QuizCalculatorProps> = ({ onSuccessLead })
                     {/* Inputs */}
                     <div className="pt-2 border-t border-slate-100 space-y-3">
                       <div className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                        Куда прислать расчет и подарок?
+                        Куда прислать расчет и зафиксировать подарок?
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -542,27 +640,35 @@ export const QuizCalculator: React.FC<QuizCalculatorProps> = ({ onSuccessLead })
                             placeholder="Например, Бауржан"
                             value={userName}
                             onChange={(e) => setUserName(e.target.value)}
-                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                            className="w-full px-3.5 py-3 rounded-xl border border-slate-300 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
                           />
                         </div>
 
                         <div>
-                          <label
-                            htmlFor={phoneInputId}
-                            className="block text-xs font-semibold text-slate-700 mb-1"
-                          >
-                            Номер телефона / WhatsApp <span className="text-red-500">*</span>
-                          </label>
+                          <div className="flex items-center justify-between mb-1">
+                            <label
+                              htmlFor={phoneInputId}
+                              className="block text-xs font-semibold text-slate-700"
+                            >
+                              Номер телефона / WhatsApp <span className="text-red-500">*</span>
+                            </label>
+                            {isValidKazakhstanPhone(userPhone) && (
+                              <span className="text-[11px] font-bold text-emerald-600 flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3" /> Номер корректен
+                              </span>
+                            )}
+                          </div>
                           <input
                             id={phoneInputId}
                             type="tel"
                             placeholder="+7 (___) ___-__-__"
                             value={userPhone}
-                            onChange={(e) => {
-                              setUserPhone(e.target.value);
-                              if (phoneError) setPhoneError('');
-                            }}
-                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                            onChange={(e) => handlePhoneInputChange(e.target.value)}
+                            className={`w-full px-3.5 py-3 rounded-xl border text-base sm:text-sm focus:outline-none focus:ring-2 ${
+                              phoneError
+                                ? 'border-red-400 focus:ring-red-400 bg-red-50/20'
+                                : 'border-slate-300 focus:ring-amber-500'
+                            }`}
                             required
                           />
                           {phoneError && (
@@ -575,18 +681,49 @@ export const QuizCalculator: React.FC<QuizCalculatorProps> = ({ onSuccessLead })
                       </div>
                     </div>
 
-                    {/* Submit CTA */}
-                    <button
-                      type="submit"
-                      className="w-full py-4 px-6 text-sm sm:text-base font-extrabold text-slate-950 bg-amber-400 hover:bg-amber-300 active:bg-amber-500 rounded-xl transition-all shadow-lg shadow-amber-400/25 cursor-pointer flex items-center justify-center gap-2 group"
-                    >
-                      <Gift className="w-5 h-5 text-slate-950" />
-                      <span>Получить расчет стоимости + Подарок</span>
-                      <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                    </button>
+                    {/* Dual Action Buttons (CRO optimized) */}
+                    <div className="space-y-2.5 pt-2">
+                      <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="w-full py-4 px-6 text-sm sm:text-base font-extrabold text-slate-950 bg-amber-400 hover:bg-amber-300 active:bg-amber-500 rounded-xl transition-all shadow-lg shadow-amber-400/25 cursor-pointer flex items-center justify-center gap-2 group"
+                      >
+                        {isSubmitting ? (
+                          <span>Фиксируем расчет и подарок...</span>
+                        ) : (
+                          <>
+                            <Gift className="w-5 h-5 text-slate-950" />
+                            <span>Получить расчет стоимости + Подарок</span>
+                            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                          </>
+                        )}
+                      </button>
 
-                    <div className="text-center text-[11px] text-slate-500">
-                      🔒 После нажатия откроется чат в WhatsApp с инженером. Мы гарантируем конфиденциальность данных.
+                      <button
+                        type="button"
+                        onClick={(e) => handleFormSubmit(e, true)}
+                        className="w-full py-3 px-4 text-xs sm:text-sm font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200 rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-2"
+                      >
+                        <MessageCircle className="w-4 h-4 fill-current text-emerald-600" />
+                        <span>Или отправить напрямую в WhatsApp инженеру</span>
+                      </button>
+                    </div>
+
+                    {/* Reassurance Micro-Copy */}
+                    <div className="text-center text-[11px] text-slate-500 space-y-1">
+                      <div className="flex items-center justify-center gap-3">
+                        <span className="flex items-center gap-1">
+                          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                          Конфиденциальность 100%
+                        </span>
+                        <span>·</span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5 text-amber-500" />
+                          Ответ за 10 минут
+                        </span>
+                        <span>·</span>
+                        <span>Выезд замерщика 0 ₸</span>
+                      </div>
                     </div>
                   </form>
                 )}
